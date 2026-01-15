@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economics Textbook Reader</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar with Chapter Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Table of Contents</h2>
+                <button id="toggleSidebar" class="toggle-btn">←</button>
+            </div>
+            <div class="chapter-list" id="chapterList">
+                <div class="loading">Loading chapters...</div>
+            </div>
+            <div class="sidebar-footer">
+                <button id="clearBookmark" class="btn-secondary">Clear Bookmark</button>
+            </div>
+        </aside>
+
+        <!-- Reopen Sidebar Button (shows when collapsed) -->
+        <button id="reopenSidebar" class="reopen-sidebar" style="display: none;">→</button>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="header">
+                <button id="menuToggle" class="menu-toggle">☰</button>
+                <h1>Economics Textbook</h1>
+
+                <!-- AI Search Bar -->
+                <div class="ai-search-container">
+                    <input type="text" id="aiSearchInput" class="ai-search-input" placeholder="Ask AI about economics... (e.g., 'What is supply and demand?')">
+                    <button id="aiSearchBtn" class="ai-search-btn">🤖 Ask AI</button>
+                </div>
+
+                <div class="header-actions">
+                    <button id="gotoBookmarkBtn" class="btn-primary" style="display: none;">📑 Go to Bookmark</button>
+                    <button id="bookmarkBtn" class="btn-primary">💾 Bookmark Page</button>
+                    <input type="file" id="pdfUpload" accept=".pdf" style="display: none;">
+                    <button id="uploadBtn" class="btn-primary">📤 Load PDF</button>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <div id="uploadPrompt" class="upload-prompt">
+                    <div class="upload-card">
+                        <h2>Welcome to Economics Textbook Reader</h2>
+                        <p>Upload your textbook PDF to get started</p>
+                        <button id="uploadPromptBtn" class="btn-large">Choose PDF File</button>
+                        <p class="hint">Your PDF will be processed in your browser - nothing is uploaded to a server</p>
+                    </div>
+                </div>
+
+                <div id="reader" class="reader" style="display: none;">
+                    <div class="reader-controls">
+                        <button id="prevPage" class="control-btn">← Previous</button>
+                        <span class="page-info">
+                            Page <span id="currentPage">1</span> of <span id="totalPages">0</span>
+                        </span>
+                        <button id="nextPage" class="control-btn">Next →</button>
+                        <div class="page-jump">
+                            <label for="pageJump">Jump to:</label>
+                            <input type="number" id="pageJump" class="page-jump-input" min="1" placeholder="Page #">
+                            <button id="pageJumpBtn" class="control-btn">Go</button>
+                        </div>
+                    </div>
+                    <div id="textContent" class="text-content"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Vocabulary Tooltip -->
+    <div id="vocabularyTooltip" class="vocabulary-tooltip"></div>
+
+    <!-- AI Response Modal -->
+    <div id="aiModal" class="ai-modal" style="display: none;">
+        <div class="ai-modal-content">
+            <div class="ai-modal-header">
+                <h3>AI Response</h3>
+                <button id="closeAiModal" class="close-modal">×</button>
+            </div>
+            <div id="aiResponse" class="ai-response">
+                <div class="ai-loading">
+                    <div class="spinner"></div>
+                    <p>Thinking...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="vocabulary.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
