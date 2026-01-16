@@ -767,16 +767,66 @@ async function handleAISearch() {
 
     } catch (error) {
         console.error('AI search error:', error);
-        aiResponse.innerHTML = `
-            <div class="ai-error">
-                <p><strong>❌ Error:</strong> ${error.message}</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">Please check your API key and try again.</p>
-            </div>
-        `;
+
+        // Provide specific feedback based on error type
+        let errorHTML = '';
+
+        if (error.message.includes('quota') || error.message.includes('rate limit')) {
+            errorHTML = `
+                <div class="ai-error">
+                    <p><strong>⏱️ Rate Limit Reached</strong></p>
+                    <p>${error.message}</p>
+                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                        <p style="margin: 0; font-size: 0.9rem;"><strong>💡 Tips:</strong></p>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 0.85rem;">
+                            <li>Google's free tier has daily limits</li>
+                            <li>Wait 1-2 minutes and try again</li>
+                            <li>Consider upgrading to a paid tier for higher limits</li>
+                            <li>Verify your API key is from a project with billing enabled</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        } else if (error.message.includes('Invalid API key')) {
+            errorHTML = `
+                <div class="ai-error">
+                    <p><strong>🔑 Invalid API Key</strong></p>
+                    <p>${error.message}</p>
+                    <div style="margin-top: 15px;">
+                        <p style="font-size: 0.9rem;">To set your API key:</p>
+                        <code style="display: block; background: #f5f5f5; padding: 10px; margin-top: 10px; border-radius: 5px;">
+                            localStorage.setItem('gemini_api_key', 'YOUR_API_KEY');
+                        </code>
+                        <p style="margin-top: 10px; font-size: 0.85rem;">Get your key: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
+                    </div>
+                </div>
+            `;
+        } else if (error.message.includes('Network error')) {
+            errorHTML = `
+                <div class="ai-error">
+                    <p><strong>🌐 Connection Error</strong></p>
+                    <p>${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 0.9rem;">Please check your internet connection and try again.</p>
+                </div>
+            `;
+        } else {
+            errorHTML = `
+                <div class="ai-error">
+                    <p><strong>❌ Error</strong></p>
+                    <p>${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 0.9rem;">Please try again or check your API configuration.</p>
+                </div>
+            `;
+        }
+
+        aiResponse.innerHTML = errorHTML;
     }
 }
 
-async function callGeminiAPI(query, context, apiKey) {
+async function callGeminiAPI(query, context, apiKey, retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 2000; // 2 seconds base delay
+
     const prompt = context
         ? `You are an economics tutor helping a student understand their textbook. Answer the question clearly and concisely using the provided context when relevant.
 
@@ -790,31 +840,81 @@ Provide a clear, educational response formatted with proper paragraphs.`
 
 Question: ${query}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1000
+    try {
+        // Using gemini-1.5-flash for better Free Tier stability
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1000
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            const errorMessage = errorData.error?.message || 'API request failed';
+
+            // Handle rate limit (429) or quota exceeded (429)
+            if (response.status === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+                if (retryCount < MAX_RETRIES) {
+                    // Extract retry delay from error message if available
+                    const retryMatch = errorMessage.match(/retry.*?(\d+)\s*second/i);
+                    const suggestedDelay = retryMatch ? parseInt(retryMatch[1]) * 1000 : null;
+
+                    // Exponential backoff: 2s, 4s, 8s (or use suggested delay)
+                    const delay = suggestedDelay || (BASE_DELAY * Math.pow(2, retryCount));
+
+                    // Update UI with retry message
+                    aiResponse.innerHTML = `
+                        <div class="ai-loading">
+                            <div class="spinner"></div>
+                            <p>⏳ System busy, retrying in ${Math.ceil(delay / 1000)} seconds...</p>
+                            <p style="font-size: 0.85rem; margin-top: 10px;">Attempt ${retryCount + 1} of ${MAX_RETRIES}</p>
+                        </div>
+                    `;
+
+                    // Wait and retry
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return callGeminiAPI(query, context, apiKey, retryCount + 1);
+                } else {
+                    throw new Error(`Rate limit exceeded. Please wait a few minutes and try again. The free tier has usage limits.`);
+                }
             }
-        })
-    });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'API request failed');
+            // Handle invalid API key
+            if (response.status === 400 && errorMessage.includes('API_KEY_INVALID')) {
+                throw new Error('Invalid API key. Please check your API key in localStorage.');
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+
+        // Validate response structure
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error('Unexpected API response format');
+        }
+
+        return data.candidates[0].content.parts[0].text;
+
+    } catch (error) {
+        // Network errors or other exceptions
+        if (error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your internet connection.');
+        }
+        throw error;
     }
-
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
 }
 
 function formatAIResponse(text) {

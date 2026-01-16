@@ -1,336 +1,128 @@
-# AI Integration Setup Guide 🤖
+# AI Setup Guide - Economics Textbook Reader
 
-Your Economics Textbook Reader now has **real AI-powered features** using Google's Gemini API!
+## Getting Your Google Gemini API Key
 
-## ✅ What's Been Added
+### Step 1: Get an API Key
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click **"Create API key"**
+4. Choose **"Create API key in new project"** (recommended for free tier)
+5. Copy your API key (starts with `AIza...`)
 
-### 1. **Real Google Gemini Integration**
-- Direct connection to Google's Gemini API
-- Uses Gemini 2.0 Flash by default (latest model, fast and free)
-- Can be upgraded to Gemini 1.5 Pro for more detailed responses
-- Analyzes your textbook content to answer questions
+### Step 2: Set Up Your API Key
 
-### 2. **Manual Chapter Configuration**
-- All 36 chapters are pre-configured
-- Chapter 1 starts at page 36 (as you specified)
-- Each chapter has defined start and end pages
-- Clean chapter names in sidebar (no page numbers)
+Open your browser's Developer Console:
+- **Chrome/Edge**: Press `F12` or `Ctrl+Shift+J` (Windows) / `Cmd+Option+J` (Mac)
+- **Firefox**: Press `F12` or `Ctrl+Shift+K` (Windows) / `Cmd+Option+K` (Mac)
+- **Safari**: Enable Developer menu in Preferences, then press `Cmd+Option+C`
 
-### 3. **API Key Management**
-- Secure storage in browser localStorage
-- Easy configuration through settings modal
-- Password-masked display
-- One-time setup
-
----
-
-## 🚀 Quick Start Guide
-
-### Step 1: Get Your Google Gemini API Key
-
-1. **Visit Google AI Studio**
-   - Go to: https://aistudio.google.com/app/apikey
-   - Sign in with your Google account
-
-2. **Create API Key**
-   - Click "Create API key"
-   - Select a Google Cloud project (or create new)
-   - Copy the key (starts with `AIza`)
-   - ⚠️ **IMPORTANT:** Save it somewhere safe!
-
-3. **Free Tier**
-   - Gemini 2.0 Flash has a generous free tier!
-   - 15 requests per minute free
-   - 1 million tokens per day free
-   - Perfect for student use!
-
-### Step 2: Configure the App
-
-1. **Open the Textbook Reader**
-   - Load your PDF as normal
-
-2. **Open Settings**
-   - Click the ⚙️ button in the header
-
-3. **Enter API Key**
-   - Paste your API key (AIza...)
-   - Click "Save API Key"
-   - You'll see "✅ API key saved successfully!"
-
-### Step 3: Start Using AI!
-
-**Try these commands:**
-
-```
-"Summarize Chapter 1"
-"What is supply and demand?"
-"Explain the concept of elasticity"
-"How does inflation affect the economy?"
-"Give me practice questions on Chapter 5"
-```
-
----
-
-## 💡 Features & Capabilities
-
-### What the AI Can Do:
-
-✅ **Answer Questions**
-- Ask anything about economics concepts
-- Get explanations in simple terms
-- Request examples and applications
-
-✅ **Summarize Chapters**
-- Type: "Summarize Chapter 3"
-- AI reads the entire chapter
-- Provides key points and main concepts
-
-✅ **Explain Vocabulary**
-- Ask: "What is GDP?"
-- Get detailed definitions beyond the built-in vocabulary
-
-✅ **Generate Study Materials**
-- Request practice questions
-- Ask for concept comparisons
-- Get step-by-step explanations
-
-✅ **Context-Aware**
-- Analyzes your current page
-- Uses surrounding pages for context
-- Gives relevant, textbook-specific answers
-
----
-
-## ⚙️ Configuration Options
-
-### Change AI Model
-
-Edit [config.js](config.js:10):
-
+Then run this command in the console:
 ```javascript
-GEMINI_MODEL: 'gemini-2.0-flash-latest'  // Latest, fast, free tier available (recommended)
-// OR
-GEMINI_MODEL: 'gemini-1.5-pro'           // More capable, higher limits
+localStorage.setItem('gemini_api_key', 'YOUR_API_KEY_HERE');
 ```
 
-### Adjust Response Length
+Replace `YOUR_API_KEY_HERE` with your actual API key.
 
-Edit [config.js](config.js:11):
+### Step 3: Verify Setup
 
+After setting your API key, reload the page and try asking a question in the AI Search Bar.
+
+## Understanding Rate Limits & Quota
+
+### Free Tier Limits
+- **Model**: gemini-1.5-flash (optimized for free tier)
+- **Requests per minute**: 15 requests
+- **Requests per day**: 1,500 requests
+- **Tokens per minute**: 1 million tokens
+
+### What Happens When You Hit Limits?
+
+The app automatically handles rate limits with:
+1. **Exponential Backoff**: Retries automatically with increasing delays (2s, 4s, 8s)
+2. **User Feedback**: Shows friendly messages like "System busy, retrying in 30s..."
+3. **Smart Retry Logic**: Uses hints from the API error to determine optimal retry time
+
+### Common Quota Issues
+
+#### "Quota Exceeded (limit: 0)"
+This usually means:
+- Your API key is from a restricted project
+- You need to enable billing (even for free tier usage)
+- Your daily limit has been reached
+
+**Solution:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable the Generative Language API
+4. Set up billing (you won't be charged for free tier usage)
+5. Generate a new API key from this project
+
+#### "Rate Limit Exceeded"
+You've made too many requests in a short time.
+
+**Solution:**
+- Wait 1-2 minutes and try again
+- The app will automatically retry with backoff
+
+#### "Invalid API Key"
+Your API key is incorrect or expired.
+
+**Solution:**
+- Double-check you copied the full key
+- Generate a new key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+## Upgrading for Higher Limits
+
+If you need more requests:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable billing on your project
+3. You'll get much higher quotas automatically
+
+**Pay-as-you-go pricing** (you only pay for what you use):
+- gemini-1.5-flash: Very affordable, optimized for speed
+- First 1M tokens free each month even with billing enabled
+
+## Troubleshooting
+
+### Check Your API Key
+Run this in the console to verify your key is stored:
 ```javascript
-MAX_TOKENS: 1000    // Default (about 750 words)
-MAX_TOKENS: 1500    // Longer responses
-MAX_TOKENS: 500     // Shorter, faster responses
+console.log(localStorage.getItem('gemini_api_key') ? 'API key is set' : 'No API key found');
 ```
 
-### Adjust Creativity
-
-Edit [config.js](config.js:12):
-
+### Clear Your API Key
+If you need to reset:
 ```javascript
-TEMPERATURE: 0.7    // Default (balanced)
-TEMPERATURE: 0.3    // More factual, less creative
-TEMPERATURE: 1.0    // More creative explanations
+localStorage.removeItem('gemini_api_key');
 ```
 
----
+### Check API Status
+Visit [Google Cloud Status](https://status.cloud.google.com/) to see if there are any service disruptions.
 
-## 📊 Chapter Structure
+## Model Information
 
-All 36 chapters are configured in [config.js](config.js:16-52):
+**Current Model**: `gemini-1.5-flash`
+- Chosen for optimal free tier compatibility
+- Fast responses (2-3 seconds typically)
+- Good quality for educational content
+- Stable and reliable
 
-| Chapter | Title | Pages |
-|---------|-------|-------|
-| 1 | Introduction to Economics | 36-51 |
-| 2 | Economic Systems | 52-67 |
-| 3 | Supply and Demand | 68-83 |
-| 4 | Market Equilibrium | 84-99 |
-| 5 | Elasticity | 100-115 |
-| ... | ... | ... |
-| 36 | Current Economic Issues | 596-611 |
+**Previous Model**: `gemini-2.0-flash-exp`
+- Experimental model with limited availability
+- May have stricter quota limits
+- Not recommended for production use
 
-**To customize:**
-1. Open [config.js](config.js)
-2. Find the `CHAPTERS` array
-3. Update titles or page ranges as needed
+## Privacy & Security
 
----
+- Your API key is stored locally in your browser (`localStorage`)
+- No data is sent to our servers
+- All API calls go directly from your browser to Google
+- Your PDF content is processed entirely in your browser
 
-## 💰 Cost Estimates
+## Support
 
-### Gemini 2.0 Flash (Recommended)
-- **Free Tier:** 15 requests/minute, 1M tokens/day
-- **Average Question:** ~500-1000 tokens = **FREE**
-- **Chapter Summary:** ~2000-3000 tokens = **FREE**
-- **Perfect for:** Student use, unlimited questions for free! 🎉
-
-### Gemini 1.5 Pro
-- **Free Tier:** 2 requests/minute, 50 requests/day
-- **Better for:** Complex explanations, detailed analysis
-- **Still FREE** for typical student use!
-
-### Paid Tier (if you exceed free limits)
-- **Gemini 2.0 Flash:** $0.075 per 1M input tokens
-- **Gemini 1.5 Pro:** $1.25 per 1M input tokens
-- Most students won't need paid tier!
-
----
-
-## 🔒 Privacy & Security
-
-### Your Data:
-✅ **API Key Storage**
-- Stored locally in your browser only
-- Never sent anywhere except Google
-- You control and can delete it anytime
-
-✅ **Textbook Content**
-- Only relevant excerpts sent to Google
-- ~3000 characters per request (context window)
-- No full textbook uploaded
-
-✅ **Google's Policy**
-- Consumer API data is NOT used to train models
-- See: https://ai.google.dev/gemini-api/terms
-
----
-
-## 🐛 Troubleshooting
-
-### "API Key Required" Error
-**Solution:** Click ⚙️ settings and enter your API key
-
-### "Invalid API Key" Error
-**Check:**
-- Key starts with `AIza`
-- No extra spaces
-- Key is active at https://aistudio.google.com/app/apikey
-
-### "Rate Limit" Error
-**Means:** Too many requests in a short time (15/min on free tier)
-**Solution:** Wait 60 seconds and try again
-
-### Slow Responses
-**Causes:**
-- Using Gemini 1.5 Pro (slower but smarter)
-- Long chapter summaries
-- Google server load
-
-**Solutions:**
-- Use Gemini 2.0 Flash in config.js (default)
-- Reduce MAX_TOKENS
-- Try again in a few minutes
-
-### "API Key Not Valid" or 400 Errors
-**Check:**
-- Make sure you enabled the Generative Language API in Google Cloud Console
-- Visit: https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com
-
----
-
-## 📝 Example Queries
-
-### Basic Questions
-```
-"What is inflation?"
-"Define monopoly"
-"Explain fiscal policy"
-```
-
-### Chapter Summaries
-```
-"Summarize Chapter 5"
-"Give me the main points of Chapter 12"
-"What are the key concepts in Chapter 20?"
-```
-
-### Study Help
-```
-"Create 5 practice questions on elasticity"
-"Compare monopoly and perfect competition"
-"Explain GDP with a simple example"
-"What's the difference between fiscal and monetary policy?"
-```
-
-### Exam Prep
-```
-"Quiz me on Chapter 8"
-"What are the most important formulas in this chapter?"
-"Explain this concept like I'm in high school"
-```
-
----
-
-## 🎓 Advanced Tips
-
-### 1. Be Specific
-❌ "Tell me about economics"
-✅ "Explain how supply and demand determine prices"
-
-### 2. Reference Page Content
-✅ "Explain the graph on this page"
-✅ "What does this section mean?"
-
-### 3. Ask Follow-ups
-✅ "Can you explain that in simpler terms?"
-✅ "Give me an example"
-
-### 4. Use for Different Learning Styles
-✅ "Explain this with a real-world example"
-✅ "Show me the step-by-step process"
-✅ "What's an analogy for this concept?"
-
----
-
-## 🔧 Technical Details
-
-### API Integration
-- **Endpoint:** `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-latest:generateContent`
-- **Method:** POST with API key in URL parameter
-- **Request Format:** JSON with contents array
-- **Response:** JSON with candidates array
-
-### Context Management
-- Extracts text from current page ± 2 pages
-- For chapter summaries: loads up to 10 pages
-- Truncates to 3000 characters for API
-- Caches loaded pages for speed
-
-### Error Handling
-- Network errors: Shows retry message
-- Invalid API key: Prompts to check settings
-- Rate limits: Suggests waiting
-- Malformed responses: Falls back gracefully
-
----
-
-## 🚀 Next Steps
-
-1. **Get your API key** from Google AI Studio
-2. **Configure it** in settings (⚙️ button)
-3. **Start asking questions!**
-4. **Bookmark frequently used chapters**
-5. **Use AI to prepare for exams**
-
----
-
-## 📚 Resources
-
-- **Google AI Studio:** https://aistudio.google.com
-- **API Documentation:** https://ai.google.dev/docs
-- **Get API Key:** https://aistudio.google.com/app/apikey
-- **Pricing:** https://ai.google.dev/pricing
-- **Terms of Service:** https://ai.google.dev/gemini-api/terms
-
----
-
-## ✨ Enjoy Your AI-Powered Study Experience!
-
-You now have a personal economics tutor built into your textbook reader, powered by Google's latest AI. Ask questions anytime, get instant explanations, and ace your economics course! 📚🎓
-
-**Questions or Issues?**
-- Check the troubleshooting section above
-- Review your API key in settings
-- Make sure you're within free tier limits (15 requests/min)
-
-Happy studying! 🚀
+If you continue to experience issues:
+1. Check the [Google AI Studio Documentation](https://ai.google.dev/docs)
+2. Verify your project has the Generative Language API enabled
+3. Try generating a new API key
+4. Consider enabling billing for higher quotas
