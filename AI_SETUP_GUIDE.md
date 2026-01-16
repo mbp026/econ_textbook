@@ -101,16 +101,27 @@ Visit [Google Cloud Status](https://status.cloud.google.com/) to see if there ar
 
 ## Model Information
 
-**Current Model**: `gemini-1.5-flash`
+**Current Model**: `gemini-1.5-flash-latest`
+- API Version: `v1beta` (required for newer models)
 - Chosen for optimal free tier compatibility
 - Fast responses (2-3 seconds typically)
 - Good quality for educational content
 - Stable and reliable
 
-**Previous Model**: `gemini-2.0-flash-exp`
-- Experimental model with limited availability
-- May have stricter quota limits
-- Not recommended for production use
+**Alternative Models You Can Use**:
+- `gemini-1.5-pro-latest` - More capable, better for complex questions
+- `gemini-2.0-flash-exp` - Experimental, newest features (may have limits)
+
+**Important**: The `v1beta` API endpoint is required for Flash models. The older `v1` endpoint only supports legacy models.
+
+## Checking Available Models
+
+To see which models your API key has access to, open your browser console (F12) and run:
+```javascript
+listAvailableModels()
+```
+
+This will display all models you can use with your API key, including their token limits and capabilities.
 
 ## Privacy & Security
 

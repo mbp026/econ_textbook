@@ -78,14 +78,32 @@ A polished web application that transforms PDF textbooks into an interactive, en
 - Hover mouse over term to see definition
 - No clicking needed - just hover and read
 
+## 🤖 AI Integration
+
+**Google Gemini AI Features:**
+- Ask questions about economics concepts
+- Get instant explanations and examples
+- Context-aware responses using textbook content
+- Automatic retry with exponential backoff for rate limits
+
+**Setup:**
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Set it in browser console: `localStorage.setItem('gemini_api_key', 'YOUR_KEY')`
+3. See [AI_SETUP_GUIDE.md](AI_SETUP_GUIDE.md) for detailed instructions
+
+**Debugging:**
+- Run `listAvailableModels()` in console to see available models
+- Current model: `gemini-1.5-flash-latest` (v1beta API)
+
 ## 🛠️ Technical Details
 
 **Technologies:**
-- Pure JavaScript (no frameworks)
-- PDF.js for rendering
+- Pure JavaScript (no frameworks or npm packages required)
+- PDF.js CDN for PDF rendering
+- Google Gemini API (REST API, no SDK needed)
 - HTML5 Canvas for page display
 - CSS3 for styling
-- localStorage for bookmarks
+- localStorage for bookmarks and API key
 
 **Performance:**
 - Lazy loading: pages load on-demand

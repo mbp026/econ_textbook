@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix 404 error by updating to v1beta API and gemini-1.5-flash-latest\n\n- Changed API endpoint from v1 to v1beta \\(required for Flash models\\)\n- Updated model from gemini-1.5-flash to gemini-1.5-flash-latest\n- Added listAvailableModels\\(\\) debug utility to check accessible models\n- Updated AI_SETUP_GUIDE.md with correct model information\n- Enhanced README.md with AI integration details and debugging info\n- No npm packages required - uses REST API directly\n\nThe v1 API only supports legacy models, causing 404 errors.\nv1beta is required for all newer Flash and Pro models.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

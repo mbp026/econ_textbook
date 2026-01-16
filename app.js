@@ -841,8 +841,9 @@ Provide a clear, educational response formatted with proper paragraphs.`
 Question: ${query}`;
 
     try {
-        // Using gemini-1.5-flash for better Free Tier stability
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // Using gemini-1.5-flash-latest with v1beta API for better compatibility
+        // Note: v1beta is required for newer models. v1 only supports older models.
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -927,3 +928,55 @@ function formatAIResponse(text) {
 
     return `<p>${formatted}</p>`;
 }
+
+// Debug utility: List available models for your API key
+// Run this in the browser console to see which models you have access to:
+// listAvailableModels()
+async function listAvailableModels() {
+    const apiKey = localStorage.getItem('gemini_api_key');
+
+    if (!apiKey) {
+        console.error('No API key found. Set it first: localStorage.setItem("gemini_api_key", "YOUR_KEY")');
+        return;
+    }
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+
+        if (!response.ok) {
+            console.error('Error fetching models:', response.status, response.statusText);
+            return;
+        }
+
+        const data = await response.json();
+
+        console.log('=== Available Gemini Models ===');
+        console.log('Total models:', data.models?.length || 0);
+        console.log('\nModels that support generateContent:');
+
+        const generateContentModels = data.models?.filter(model =>
+            model.supportedGenerationMethods?.includes('generateContent')
+        ) || [];
+
+        generateContentModels.forEach(model => {
+            console.log(`\n📘 ${model.name}`);
+            console.log(`   Display Name: ${model.displayName}`);
+            console.log(`   Description: ${model.description}`);
+            console.log(`   Input Token Limit: ${model.inputTokenLimit?.toLocaleString() || 'N/A'}`);
+            console.log(`   Output Token Limit: ${model.outputTokenLimit?.toLocaleString() || 'N/A'}`);
+            console.log(`   Methods: ${model.supportedGenerationMethods?.join(', ')}`);
+        });
+
+        console.log('\n=== Recommended Models for This App ===');
+        console.log('✅ gemini-1.5-flash-latest - Fast, free tier friendly');
+        console.log('✅ gemini-1.5-pro-latest - More capable, higher quality');
+        console.log('✅ gemini-2.0-flash-exp - Experimental, newest features');
+
+        return generateContentModels;
+    } catch (error) {
+        console.error('Error listing models:', error);
+    }
+}
+
+// Make the function available globally for console use
+window.listAvailableModels = listAvailableModels;
