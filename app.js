@@ -691,6 +691,45 @@ if (bookmarkedPage) {
     gotoBookmarkBtn.style.display = 'inline-block';
 }
 
+// Local AI Model - Initialize on page load
+let localAI = null;
+let aiModelReady = false;
+
+async function initLocalAI() {
+    try {
+        aiResponse.innerHTML = `
+            <div class="ai-loading">
+                <div class="spinner"></div>
+                <p>Loading AI model (first time may take 1-2 minutes)...</p>
+                <p style="font-size: 0.85rem; margin-top: 10px;">Model downloads once and runs locally in your browser</p>
+            </div>
+        `;
+        aiModal.style.display = 'flex';
+
+        // Initialize the summarization pipeline with a small, fast model
+        localAI = await window.transformersPipeline('summarization', 'Xenova/distilbart-cnn-6-6');
+        aiModelReady = true;
+
+        aiModal.style.display = 'none';
+        showNotification('AI model ready! You can now ask questions.');
+    } catch (error) {
+        console.error('Error loading AI model:', error);
+        aiResponse.innerHTML = `
+            <div class="ai-error">
+                <p><strong>❌ Failed to load AI model</strong></p>
+                <p>${error.message}</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">Please refresh the page and try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Initialize AI when page loads
+window.addEventListener('load', () => {
+    // Delay initialization slightly to let PDF.js load first
+    setTimeout(initLocalAI, 1000);
+});
+
 // AI Search functionality
 aiSearchBtn.addEventListener('click', handleAISearch);
 
@@ -719,20 +758,14 @@ async function handleAISearch() {
         return;
     }
 
-    // Get API key from localStorage
-    const apiKey = localStorage.getItem('gemini_api_key');
-
-    if (!apiKey) {
+    // Check if AI model is ready
+    if (!aiModelReady) {
         aiModal.style.display = 'flex';
         aiResponse.innerHTML = `
             <div class="ai-error">
-                <p><strong>⚠️ API Key Required</strong></p>
-                <p>Please set your Google Gemini API key in localStorage.</p>
-                <p style="margin-top: 15px; font-size: 0.9rem;">Open your browser console and run:</p>
-                <code style="display: block; background: #f5f5f5; padding: 10px; margin-top: 10px; border-radius: 5px;">
-                    localStorage.setItem('gemini_api_key', 'YOUR_API_KEY');
-                </code>
-                <p style="margin-top: 10px; font-size: 0.85rem;">Get your API key from: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
+                <p><strong>⏳ AI Model Still Loading</strong></p>
+                <p>The AI model is still initializing. Please wait a moment and try again.</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">First-time setup can take 1-2 minutes to download the model.</p>
             </div>
         `;
         return;
@@ -743,7 +776,7 @@ async function handleAISearch() {
     aiResponse.innerHTML = `
         <div class="ai-loading">
             <div class="spinner"></div>
-            <p>Thinking...</p>
+            <p>Analyzing your question...</p>
         </div>
     `;
 
@@ -754,229 +787,99 @@ async function handleAISearch() {
             context = pdfText[currentPage - 1];
         }
 
-        // Call Gemini 2.0 Flash API
-        const response = await callGeminiAPI(query, context, apiKey);
+        // Determine if this is a summarization or question-answering request
+        const isSummaryRequest = query.toLowerCase().includes('summar') ||
+                                 query.toLowerCase().includes('main points') ||
+                                 query.toLowerCase().includes('key concepts');
+
+        let response;
+
+        if (isSummaryRequest && context) {
+            // Use local AI to summarize current page
+            response = await summarizeContent(context);
+        } else if (context) {
+            // Try to extract relevant info from context
+            response = await answerQuestion(query, context);
+        } else {
+            // No PDF loaded
+            response = "Please load a PDF first to use AI features. The AI needs textbook content to answer your questions.";
+        }
 
         // Display the response
         aiResponse.innerHTML = `
             <div class="ai-success">
-                <h4>📘 Economics AI Tutor</h4>
-                ${formatAIResponse(response)}
+                <h4>📘 Local AI Assistant</h4>
+                <p>${response}</p>
+                <p style="margin-top: 15px; font-size: 0.85rem; color: #666;">
+                    💡 This AI runs locally in your browser - no API key or internet required!
+                </p>
             </div>
         `;
 
     } catch (error) {
         console.error('AI search error:', error);
-
-        // Provide specific feedback based on error type
-        let errorHTML = '';
-
-        if (error.message.includes('quota') || error.message.includes('rate limit')) {
-            errorHTML = `
-                <div class="ai-error">
-                    <p><strong>⏱️ Rate Limit Reached</strong></p>
-                    <p>${error.message}</p>
-                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-                        <p style="margin: 0; font-size: 0.9rem;"><strong>💡 Tips:</strong></p>
-                        <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 0.85rem;">
-                            <li>Google's free tier has daily limits</li>
-                            <li>Wait 1-2 minutes and try again</li>
-                            <li>Consider upgrading to a paid tier for higher limits</li>
-                            <li>Verify your API key is from a project with billing enabled</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        } else if (error.message.includes('Invalid API key')) {
-            errorHTML = `
-                <div class="ai-error">
-                    <p><strong>🔑 Invalid API Key</strong></p>
-                    <p>${error.message}</p>
-                    <div style="margin-top: 15px;">
-                        <p style="font-size: 0.9rem;">To set your API key:</p>
-                        <code style="display: block; background: #f5f5f5; padding: 10px; margin-top: 10px; border-radius: 5px;">
-                            localStorage.setItem('gemini_api_key', 'YOUR_API_KEY');
-                        </code>
-                        <p style="margin-top: 10px; font-size: 0.85rem;">Get your key: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
-                    </div>
-                </div>
-            `;
-        } else if (error.message.includes('Network error')) {
-            errorHTML = `
-                <div class="ai-error">
-                    <p><strong>🌐 Connection Error</strong></p>
-                    <p>${error.message}</p>
-                    <p style="margin-top: 10px; font-size: 0.9rem;">Please check your internet connection and try again.</p>
-                </div>
-            `;
-        } else {
-            errorHTML = `
-                <div class="ai-error">
-                    <p><strong>❌ Error</strong></p>
-                    <p>${error.message}</p>
-                    <p style="margin-top: 10px; font-size: 0.9rem;">Please try again or check your API configuration.</p>
-                </div>
-            `;
-        }
-
-        aiResponse.innerHTML = errorHTML;
+        aiResponse.innerHTML = `
+            <div class="ai-error">
+                <p><strong>❌ Error</strong></p>
+                <p>${error.message}</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">Please try again or reload the page.</p>
+            </div>
+        `;
     }
 }
 
-async function callGeminiAPI(query, context, apiKey, retryCount = 0) {
-    const MAX_RETRIES = 3;
-    const BASE_DELAY = 2000; // 2 seconds base delay
+// Local AI Functions - No API key needed!
 
-    const prompt = context
-        ? `You are an economics tutor helping a student understand their textbook. Answer the question clearly and concisely using the provided context when relevant.
-
-Context from current page:
-${context.substring(0, 2000)}
-
-Question: ${query}
-
-Provide a clear, educational response formatted with proper paragraphs.`
-        : `You are an economics tutor. Answer this economics question clearly and concisely:
-
-Question: ${query}`;
-
+async function summarizeContent(text) {
     try {
-        // Using gemini-1.5-flash-latest with v1beta API for better compatibility
-        // Note: v1beta is required for newer models. v1 only supports older models.
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1000
-                }
-            })
+        // Limit text to first 3000 characters for faster processing
+        const input = text.substring(0, 3000);
+
+        const result = await localAI(input, {
+            max_new_tokens: 150,
+            min_new_tokens: 50,
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            const errorMessage = errorData.error?.message || 'API request failed';
-
-            // Handle rate limit (429) or quota exceeded (429)
-            if (response.status === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-                if (retryCount < MAX_RETRIES) {
-                    // Extract retry delay from error message if available
-                    const retryMatch = errorMessage.match(/retry.*?(\d+)\s*second/i);
-                    const suggestedDelay = retryMatch ? parseInt(retryMatch[1]) * 1000 : null;
-
-                    // Exponential backoff: 2s, 4s, 8s (or use suggested delay)
-                    const delay = suggestedDelay || (BASE_DELAY * Math.pow(2, retryCount));
-
-                    // Update UI with retry message
-                    aiResponse.innerHTML = `
-                        <div class="ai-loading">
-                            <div class="spinner"></div>
-                            <p>⏳ System busy, retrying in ${Math.ceil(delay / 1000)} seconds...</p>
-                            <p style="font-size: 0.85rem; margin-top: 10px;">Attempt ${retryCount + 1} of ${MAX_RETRIES}</p>
-                        </div>
-                    `;
-
-                    // Wait and retry
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    return callGeminiAPI(query, context, apiKey, retryCount + 1);
-                } else {
-                    throw new Error(`Rate limit exceeded. Please wait a few minutes and try again. The free tier has usage limits.`);
-                }
-            }
-
-            // Handle invalid API key
-            if (response.status === 400 && errorMessage.includes('API_KEY_INVALID')) {
-                throw new Error('Invalid API key. Please check your API key in localStorage.');
-            }
-
-            throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-
-        // Validate response structure
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error('Unexpected API response format');
-        }
-
-        return data.candidates[0].content.parts[0].text;
-
+        return result[0].summary_text;
     } catch (error) {
-        // Network errors or other exceptions
-        if (error.message.includes('fetch')) {
-            throw new Error('Network error. Please check your internet connection.');
-        }
-        throw error;
+        throw new Error('Failed to generate summary: ' + error.message);
     }
 }
 
-function formatAIResponse(text) {
-    // Convert markdown-style formatting to HTML
-    let formatted = text
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-
-    return `<p>${formatted}</p>`;
-}
-
-// Debug utility: List available models for your API key
-// Run this in the browser console to see which models you have access to:
-// listAvailableModels()
-async function listAvailableModels() {
-    const apiKey = localStorage.getItem('gemini_api_key');
-
-    if (!apiKey) {
-        console.error('No API key found. Set it first: localStorage.setItem("gemini_api_key", "YOUR_KEY")');
-        return;
-    }
-
+async function answerQuestion(query, context) {
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        // For question answering, we'll use summarization on relevant context
+        // This is a simplified approach - the model will extract key info
 
-        if (!response.ok) {
-            console.error('Error fetching models:', response.status, response.statusText);
-            return;
-        }
+        // Create a focused text combining query and context
+        const input = `Question: ${query}\n\nContext: ${context.substring(0, 2500)}`;
 
-        const data = await response.json();
-
-        console.log('=== Available Gemini Models ===');
-        console.log('Total models:', data.models?.length || 0);
-        console.log('\nModels that support generateContent:');
-
-        const generateContentModels = data.models?.filter(model =>
-            model.supportedGenerationMethods?.includes('generateContent')
-        ) || [];
-
-        generateContentModels.forEach(model => {
-            console.log(`\n📘 ${model.name}`);
-            console.log(`   Display Name: ${model.displayName}`);
-            console.log(`   Description: ${model.description}`);
-            console.log(`   Input Token Limit: ${model.inputTokenLimit?.toLocaleString() || 'N/A'}`);
-            console.log(`   Output Token Limit: ${model.outputTokenLimit?.toLocaleString() || 'N/A'}`);
-            console.log(`   Methods: ${model.supportedGenerationMethods?.join(', ')}`);
+        const result = await localAI(input, {
+            max_new_tokens: 100,
+            min_new_tokens: 30,
         });
 
-        console.log('\n=== Recommended Models for This App ===');
-        console.log('✅ gemini-1.5-flash-latest - Fast, free tier friendly');
-        console.log('✅ gemini-1.5-pro-latest - More capable, higher quality');
-        console.log('✅ gemini-2.0-flash-exp - Experimental, newest features');
-
-        return generateContentModels;
+        return result[0].summary_text;
     } catch (error) {
-        console.error('Error listing models:', error);
+        // Fallback: try to find relevant sentences in context
+        return findRelevantContext(query, context);
     }
 }
 
-// Make the function available globally for console use
-window.listAvailableModels = listAvailableModels;
+function findRelevantContext(query, context) {
+    // Simple keyword matching fallback
+    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const queryWords = query.toLowerCase().split(' ').filter(w => w.length > 3);
+
+    // Find sentences containing query keywords
+    const relevantSentences = sentences.filter(sentence => {
+        const lowerSentence = sentence.toLowerCase();
+        return queryWords.some(word => lowerSentence.includes(word));
+    });
+
+    if (relevantSentences.length > 0) {
+        return relevantSentences.slice(0, 3).join('. ') + '.';
+    }
+
+    return 'I couldn\'t find specific information about that on this page. Try using "summarize this page" to get an overview, or navigate to a different chapter.';
+}

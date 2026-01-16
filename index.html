@@ -94,6 +94,11 @@
         </div>
     </div>
 
+    <script type="module">
+        // Import Transformers.js for local AI (runs in browser, no API key needed)
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+        window.transformersPipeline = pipeline;
+    </script>
     <script src="config.js"></script>
     <script src="vocabulary.js"></script>
     <script src="app.js"></script>
