@@ -728,7 +728,76 @@ async function initLocalAI() {
 window.addEventListener('load', () => {
     // Delay initialization slightly to let PDF.js load first
     setTimeout(initLocalAI, 1000);
+
+    // Try to auto-load textbook.pdf from project folder
+    tryLoadDefaultPDF();
 });
+
+// Auto-load PDF from project folder if available
+async function tryLoadDefaultPDF() {
+    try {
+        const response = await fetch('textbook.pdf');
+        if (!response.ok) {
+            console.log('No default textbook.pdf found, showing upload prompt');
+            return;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Hide upload prompt and show reader
+        uploadPrompt.style.display = 'none';
+        reader.style.display = 'flex';
+
+        // Show progress indicator
+        chapterList.innerHTML = `
+            <div class="loading">
+                <div>Loading PDF...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">0%</div>
+            </div>
+        `;
+
+        // Load PDF document
+        const loadingTask = pdfjsLib.getDocument({
+            data: arrayBuffer,
+            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+            cMapPacked: true
+        });
+
+        pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+        totalPagesSpan.textContent = totalPages;
+
+        // Quick scan for chapters
+        await quickScanForChapters();
+
+        // Load bookmark if exists
+        const bookmark = loadBookmark();
+        if (bookmark && bookmark <= totalPages) {
+            currentPage = bookmark;
+            gotoBookmarkBtn.style.display = 'inline-block';
+            showNotification('Restored to bookmarked page');
+        }
+
+        // Display first or bookmarked page
+        await displayPage(currentPage);
+        updateChapterList();
+
+        chapterList.innerHTML = '';
+        updateChapterList();
+
+        // Update page jump max
+        updatePageJumpMax();
+
+        showNotification('Textbook loaded automatically!');
+
+    } catch (error) {
+        console.log('Could not auto-load PDF:', error.message);
+        // Keep upload prompt visible (default state)
+    }
+}
 
 // AI Search functionality
 aiSearchBtn.addEventListener('click', handleAISearch);
