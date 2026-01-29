@@ -80,23 +80,12 @@ function clearBookmark() {
 // Show notification
 function showNotification(message) {
     const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #27ae60;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 5px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 2000;
-        animation: fadeIn 0.3s ease;
-    `;
+    notification.className = 'notification';
     notification.textContent = message;
     document.body.appendChild(notification);
 
     setTimeout(() => {
-        notification.style.animation = 'fadeOut 0.3s ease';
+        notification.style.animation = 'fadeOut 0.3s ease forwards';
         setTimeout(() => notification.remove(), 300);
     }, 2000);
 }
@@ -700,8 +689,8 @@ async function initLocalAI() {
         aiResponse.innerHTML = `
             <div class="ai-loading">
                 <div class="spinner"></div>
-                <p>Loading AI model (first time may take 1-2 minutes)...</p>
-                <p style="font-size: 0.85rem; margin-top: 10px;">Model downloads once and runs locally in your browser</p>
+                <p>Loading AI model...</p>
+                <p style="font-size: 0.8125rem; margin-top: 8px; color: var(--text-muted);">First time may take 1-2 minutes to download</p>
             </div>
         `;
         aiModal.style.display = 'flex';
@@ -711,14 +700,14 @@ async function initLocalAI() {
         aiModelReady = true;
 
         aiModal.style.display = 'none';
-        showNotification('AI model ready! You can now ask questions.');
+        showNotification('AI model ready');
     } catch (error) {
         console.error('Error loading AI model:', error);
         aiResponse.innerHTML = `
             <div class="ai-error">
-                <p><strong>❌ Failed to load AI model</strong></p>
+                <p><strong>Failed to load AI model</strong></p>
                 <p>${error.message}</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">Please refresh the page and try again.</p>
+                <p style="margin-top: 12px; font-size: 0.875rem;">Please refresh the page and try again.</p>
             </div>
         `;
     }
@@ -832,9 +821,9 @@ async function handleAISearch() {
         aiModal.style.display = 'flex';
         aiResponse.innerHTML = `
             <div class="ai-error">
-                <p><strong>⏳ AI Model Still Loading</strong></p>
+                <p><strong>AI Model Still Loading</strong></p>
                 <p>The AI model is still initializing. Please wait a moment and try again.</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">First-time setup can take 1-2 minutes to download the model.</p>
+                <p style="margin-top: 12px; font-size: 0.875rem; color: var(--text-muted);">First-time setup can take 1-2 minutes.</p>
             </div>
         `;
         return;
@@ -877,10 +866,10 @@ async function handleAISearch() {
         // Display the response
         aiResponse.innerHTML = `
             <div class="ai-success">
-                <h4>📘 Local AI Assistant</h4>
+                <h4>Response</h4>
                 <p>${response}</p>
-                <p style="margin-top: 15px; font-size: 0.85rem; color: #666;">
-                    💡 This AI runs locally in your browser - no API key or internet required!
+                <p style="margin-top: 16px; font-size: 0.8125rem; color: var(--text-muted);">
+                    Powered by local AI — runs entirely in your browser.
                 </p>
             </div>
         `;
@@ -889,9 +878,9 @@ async function handleAISearch() {
         console.error('AI search error:', error);
         aiResponse.innerHTML = `
             <div class="ai-error">
-                <p><strong>❌ Error</strong></p>
+                <p><strong>Error</strong></p>
                 <p>${error.message}</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">Please try again or reload the page.</p>
+                <p style="margin-top: 12px; font-size: 0.875rem;">Please try again or reload the page.</p>
             </div>
         `;
     }
